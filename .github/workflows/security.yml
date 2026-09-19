@@ -1,6 +1,5 @@
 name: Security Scan - SCA
 
-# Chạy mỗi khi push hoặc tạo pull request lên nhánh chính
 on:
   push:
     branches: [ master, main ]
@@ -8,20 +7,31 @@ on:
     branches: [ master, main ]
 
 jobs:
-  trivy-scan:
-    name: Quét lỗ hổng thư viện bằng Trivy
+  sca-scan:
+    name: Quét lỗ hổng thư viện (SCA) bằng Trivy
     runs-on: ubuntu-latest
     steps:
-      # Lấy source code về máy ảo của GitHub
+      # Lấy source code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Chạy Trivy quét toàn bộ thư viện, chặn nếu có lỗ hổng nặng
-      - name: Run Trivy scanner
+      # Cài Node.js để chuẩn bị môi trường
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Cài thư viện để sinh ra cây phụ thuộc đầy đủ (package-lock.json)
+      - name: Install dependencies
+        run: npm install --ignore-scripts --legacy-peer-deps
+
+      # Quét lỗ hổng THƯ VIỆN (bỏ qua secret, chỉ tập trung CVE cho đúng đề SCA)
+      - name: Run Trivy SCA scan
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          scanners: 'vuln'              # chỉ quét lỗ hổng thư viện (không quét secret)
           severity: 'CRITICAL,HIGH'     # chỉ báo lỗ hổng nghiêm trọng
-          exit-code: '1'                # có lỗ hổng thì pipeline FAIL (đỏ)
+          exit-code: '1'                # có lỗ hổng thì FAIL (đỏ)
           format: 'table'
