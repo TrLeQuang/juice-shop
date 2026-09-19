@@ -1,0 +1,27 @@
+name: Security Scan - SCA
+
+# Chạy mỗi khi push hoặc tạo pull request lên nhánh chính
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  trivy-scan:
+    name: Quét lỗ hổng thư viện bằng Trivy
+    runs-on: ubuntu-latest
+    steps:
+      # Lấy source code về máy ảo của GitHub
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Chạy Trivy quét toàn bộ thư viện, chặn nếu có lỗ hổng nặng
+      - name: Run Trivy scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'     # chỉ báo lỗ hổng nghiêm trọng
+          exit-code: '1'                # có lỗ hổng thì pipeline FAIL (đỏ)
+          format: 'table'
